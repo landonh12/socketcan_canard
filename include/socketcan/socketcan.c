@@ -43,7 +43,7 @@ int open_can_socket(int *s)
 
     // Construct an if request for vcan0 socket.
     struct ifreq ifr;
-    strcpy(ifr.ifr_name, "vcan0");
+    strcpy(ifr.ifr_name, "can0");
     ioctl(*s, SIOCGIFINDEX, &ifr);
 
     // Create a socket address field for binding.

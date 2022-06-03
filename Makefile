@@ -11,6 +11,7 @@ output:
 	mkdir bin
 	gcc -I$(INCLUDE_PATH) test_canard_rx.c $(LIBCANARD_PATH)/canard.c $(O1HEAP_PATH)/o1heap.c $(SOCKETCAN_PATH)/socketcan.c -o bin/test_canard_rx
 	gcc -I$(INCLUDE_PATH) -pthread test_canard_tx.c $(LIBCANARD_PATH)/canard.c $(O1HEAP_PATH)/o1heap.c $(SOCKETCAN_PATH)/socketcan.c -o bin/test_canard_tx
+	gcc -I$(INCLUDE_PATH) -pthread pca_pwm_tx.c $(LIBCANARD_PATH)/canard.c $(O1HEAP_PATH)/o1heap.c $(SOCKETCAN_PATH)/socketcan.c -o bin/pca_pwm_tx
 
 clean: 
 	rm -rf bin/
