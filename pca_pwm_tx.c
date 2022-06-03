@@ -52,8 +52,7 @@ static uint8_t my_message_transfer_id = 0;
 //size_t hbeat_ser_buf_size = uavcan_node_Heartbeat_1_0_EXTENT_BYTES_;
 //uint8_t hbeat_ser_buf[uavcan_node_Heartbeat_1_0_EXTENT_BYTES_];
 
-struct pca_pwm_s *pca_pwm_ptr, pca_pwm;
-pca_pwm_ptr = &pca_pwm;
+struct pca_pwm_s *pca_pwm_ptr;
 size_t pca_pwm_size = sizeof(struct pca_pwm_s);
 
 // vcan0 socket descriptor
