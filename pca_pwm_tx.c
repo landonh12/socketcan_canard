@@ -52,7 +52,8 @@ static uint8_t my_message_transfer_id = 0;
 //size_t hbeat_ser_buf_size = uavcan_node_Heartbeat_1_0_EXTENT_BYTES_;
 //uint8_t hbeat_ser_buf[uavcan_node_Heartbeat_1_0_EXTENT_BYTES_];
 
-struct pca_pwm_s *pca_pwm_ptr;
+const struct pca_pwm_s pca_pwm;
+struct pca_pwm_s *pca_pwm_ptr = &pca_pwm;
 size_t pca_pwm_size = sizeof(struct pca_pwm_s);
 
 // vcan0 socket descriptor
@@ -91,15 +92,6 @@ int main(void)
         // Sleep for 1 second so our uptime increments once every second.
         sleep(1);
 
-        // Initialize a Heartbeat message
-        /*
-        uavcan_node_Heartbeat_1_0 test_heartbeat = {
-            .uptime = test_uptimeSec,
-            .health = { uavcan_node_Health_1_0_NOMINAL },
-            .mode = { uavcan_node_Mode_1_0_OPERATIONAL }
-        };
-        */
-
         pca_pwm_ptr->timestamp = 0;
         pca_pwm_ptr->pwm_period = 20000U;
         for(int i = 0; i < 16; i++) {
@@ -109,9 +101,9 @@ int main(void)
         // Print data from Heartbeat message before it's serialized.
         system("clear");
         printf("Preparing to send the following pca_pwm message: \n");
-        printf("Uptime: %d\n", pca_pwm_ptr->timestamp);
-        printf("Health: %d\n", pca_pwm_ptr->pwm_period);
-        printf("Mode: %d\n", pca_pwm_ptr->pulse_width[0]);
+        printf("timestamp: %d\n", pca_pwm.timestamp);
+        printf("period: %d\n", pca_pwm.pwm_period);
+        printf("width: %d\n", pca_pwm.pulse_width[0]);
         
         // Create a CanardTransfer and give it the required data.
         const CanardTransfer transfer = {
@@ -122,21 +114,12 @@ int main(void)
             .remote_node_id = CANARD_NODE_ID_UNSET,
             .transfer_id = my_message_transfer_id,
             .payload_size = pca_pwm_size,
-            .payload = pca_pwm_ptr,
+            .payload = &pca_pwm,
         };
           
         // Increment our uptime and transfer ID.
-        ++test_uptimeSec;
         ++my_message_transfer_id;
 
-        // Stop the loop once we hit 30s of transfer.
-        if(test_uptimeSec > UPTIME_SEC_MAX)
-        {
-            printf("Reached 30s uptime! Exiting...\n");
-            exit_thread = 1;
-            break;
-        }
-        
         // Push our CanardTransfer to the Libcanard instance's transfer stack.
         int32_t result = canardTxPush((CanardInstance* const)&ins, &transfer);
         
@@ -191,26 +174,26 @@ void *process_canard_TX_stack(void* arg)
         for(const CanardFrame* txf = NULL; (txf = canardTxPeek((CanardInstance* const)&ins)) != NULL;)
         {
             // Make sure we aren't sending a message before the actual time.
-            if(txf->timestamp_usec < (unsigned long)time(NULL))
+            if(true) // txf->timestamp_usec < (unsigned long)time(NULL)
             {
                 // Instantiate a SocketCAN CAN frame.
-                struct can_frame frame;
+                struct canfd_frame frame;
 
                 // Give payload size.
-                // Libcanard states that payload_size != can_dlc. Use provided
-                // lookup table to correctly populate frame.can_dlc
-                frame.can_dlc = CanardCANLengthToDLC[txf->payload_size];
+                // Libcanard states that payload_size != len. Use provided
+                // lookup table to correctly populate frame.len
+                frame.len = txf->payload_size;
                 
                 // Give extended can id.
                 // Make sure to use CAN_EFF_FLAG or you won't get extended CAN ID.
                 frame.can_id = txf->extended_can_id | CAN_EFF_FLAG;
                 
                 // Copy transfer payload to SocketCAN frame.
-                memcpy(&frame.data[0], txf->payload, txf->payload_size);
+                memcpy(&frame.data, txf->payload, txf->payload_size);
                 
                 // Print RAW can data.
-                printf("0x%03X [%d] ",frame.can_id, frame.can_dlc);
-                for (uint8_t i = 0; i < frame.can_dlc; i++)
+                printf("0x%03X [%d] ",frame.can_id, frame.len);
+                for (uint8_t i = 0; i < frame.len; i++)
                         printf("%02X ",frame.data[i]);
                 printf(" Sent!\n\n");
                     
