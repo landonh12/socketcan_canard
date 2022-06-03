@@ -12,5 +12,5 @@
 #include <linux/can/raw.h>
 
 int open_can_socket(int *s);
-int recv_can_data(int *s, struct canfd_frame *frame);
-int send_can_data(int *s, struct canfd_frame *frame);
+int recv_can_data(int *s, void* frame);
+int send_can_data(int *s, void* frame);

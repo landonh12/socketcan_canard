@@ -5,9 +5,10 @@
  * s: pointer to socket descriptor
  * frame: pointer to SocketCAN frame struct
  */
-int send_can_data(int *s, struct canfd_frame *frame)
+int send_can_data(int *s, void* frame)
 {
-    if(write(*s, frame, sizeof(struct canfd_frame)))
+    int ret = write(*s, frame, sizeof(struct canfd_frame));
+    if(ret != sizeof(struct canfd_frame))
     {
         perror("Write");
         return -1;
@@ -19,7 +20,7 @@ int send_can_data(int *s, struct canfd_frame *frame)
  * s: pointer to socket descriptor
  * frame: pointer to SocketCAN frame struct
  */
-int recv_can_data(int *s, struct canfd_frame *frame)
+int recv_can_data(int *s, void* frame)
 {
     if(read(*s, frame, sizeof(struct canfd_frame)) < 0)
     {
@@ -49,7 +50,7 @@ int open_can_socket(int *s)
     // Create a socket address field for binding.
     struct sockaddr_can addr;
     memset(&addr, 0, sizeof(addr));
-    addr.can_family = PF_CAN;
+    addr.can_family = AF_CAN;
     addr.can_ifindex = ifr.ifr_ifindex;
 
     // Bind the socket.

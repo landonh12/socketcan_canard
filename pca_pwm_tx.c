@@ -52,8 +52,7 @@ static uint8_t my_message_transfer_id = 0;
 //size_t hbeat_ser_buf_size = uavcan_node_Heartbeat_1_0_EXTENT_BYTES_;
 //uint8_t hbeat_ser_buf[uavcan_node_Heartbeat_1_0_EXTENT_BYTES_];
 
-const struct pca_pwm_s pca_pwm;
-struct pca_pwm_s *pca_pwm_ptr = &pca_pwm;
+struct pca_pwm_s pca_pwm;
 size_t pca_pwm_size = sizeof(struct pca_pwm_s);
 
 // vcan0 socket descriptor
@@ -92,10 +91,10 @@ int main(void)
         // Sleep for 1 second so our uptime increments once every second.
         sleep(1);
 
-        pca_pwm_ptr->timestamp = 0;
-        pca_pwm_ptr->pwm_period = 20000U;
+        pca_pwm.timestamp = 0;
+        pca_pwm.pwm_period = 20000U;
         for(int i = 0; i < 16; i++) {
-            pca_pwm_ptr->pulse_width[i] = 1500U;
+            pca_pwm.pulse_width[i] = 1500U;
         }
         
         // Print data from Heartbeat message before it's serialized.
@@ -114,7 +113,7 @@ int main(void)
             .remote_node_id = CANARD_NODE_ID_UNSET,
             .transfer_id = my_message_transfer_id,
             .payload_size = pca_pwm_size,
-            .payload = &pca_pwm,
+            .payload = (const void*)&pca_pwm,
         };
           
         // Increment our uptime and transfer ID.
@@ -186,7 +185,7 @@ void *process_canard_TX_stack(void* arg)
                 
                 // Give extended can id.
                 // Make sure to use CAN_EFF_FLAG or you won't get extended CAN ID.
-                frame.can_id = txf->extended_can_id | CAN_EFF_FLAG;
+                frame.can_id = txf->extended_can_id;// | CAN_EFF_FLAG;
                 
                 // Copy transfer payload to SocketCAN frame.
                 memcpy(&frame.data, txf->payload, txf->payload_size);
@@ -198,10 +197,10 @@ void *process_canard_TX_stack(void* arg)
                 printf(" Sent!\n\n");
                     
                 // Send CAN Frame.
-                if(send_can_data(&s, &frame) < 0)
+                if(send_can_data(&s, (void*)&frame) < 0)
                 {
                     printf("Fatal error sending CAN data. Exiting thread.\n");
-                    return;
+                    //return;
                 }
 
                 // Pop the sent data off the stack and free its memory.
